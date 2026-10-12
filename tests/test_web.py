@@ -171,6 +171,21 @@ class TestH7Redirect(unittest.TestCase):
         self.assertEqual(server.verbs(), ["HEAD", "GET"])   # GET also answers 405 here
         self.assertEqual(row.result, "fail")
 
+    def test_a_malformed_answer_to_head_is_asked_again_with_get(self) -> None:
+        def head_garbage(handler: object) -> None:
+            if handler.command == "HEAD":  # type: ignore[attr-defined]
+                handler.wfile.write(b"\r\n")  # type: ignore[attr-defined]
+                handler.close_connection = True  # type: ignore[attr-defined]
+                return
+            handler.send_response(308)  # type: ignore[attr-defined]
+            handler.send_header("Location", "https://a.example.com/")  # type: ignore[attr-defined]
+            handler.send_header("Content-Length", "0")  # type: ignore[attr-defined]
+            handler.end_headers()  # type: ignore[attr-defined]
+
+        row, server = self.row({"/": head_garbage})
+        self.assertEqual(row.result, "pass")
+        self.assertEqual(server.verbs(), ["HEAD", "GET"])
+
     def test_skip(self) -> None:
         self.assertEqual(redirect_row(surface(skip=["H7"]), "http://a.example.com/").result, "skip")
 

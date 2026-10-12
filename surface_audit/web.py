@@ -7,7 +7,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 from urllib.parse import urljoin, urlsplit
 
 from .config import Surface
-from .net import MAX_HOPS, REDIRECTS, Answer, Unreachable, fetch
+from .net import MAX_HOPS, REDIRECTS, Answer, Malformed, Unreachable, fetch
 from .rules import ERROR, FAIL, PASS, SKIP, WARN, Row
 
 HSTS_MIN = 15552000      # 180 days: the shortest max-age worth having
@@ -150,13 +150,20 @@ def http_urls(surface: Surface) -> List[str]:
     return ["http://%s/" % (("[%s]" % h) if ":" in h else h) for h in hosts]
 
 
+def _head_or_get(url: str) -> Answer:
+    """HEAD is enough to read a redirect; GET when a server refuses HEAD or answers it malformed."""
+    try:
+        answer = fetch("HEAD", url, follow=False)
+    except Malformed:
+        return fetch("GET", url, follow=False)
+    return fetch("GET", url, follow=False) if answer.status in (405, 501) else answer
+
+
 def _https_hop(url: str) -> Answer:
-    """Follow plain-http redirects until one points at https. HEAD is enough; GET if HEAD is refused."""
+    """Follow plain-http redirects until one points at https."""
     hops = 0
     while True:
-        answer = fetch("HEAD", url, follow=False)
-        if answer.status in (405, 501):
-            answer = fetch("GET", url, follow=False)
+        answer = _head_or_get(url)
         location = answer.headers.get("Location")
         if answer.status not in REDIRECTS or not location:
             return answer._replace(hops=hops)

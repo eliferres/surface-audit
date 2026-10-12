@@ -6,6 +6,7 @@ from unittest import mock
 
 from fakeserver import FakeServer, closed_port, hang_up, slow
 from surface_audit import Unreachable, fetch
+from surface_audit.net import Malformed
 from surface_audit import net
 
 
@@ -86,6 +87,16 @@ class TestNoAnswer(unittest.TestCase):
         with FakeServer({"/": slow(1.0)}) as server, mock.patch.object(net, "TIMEOUT", 0.2):
             with self.assertRaisesRegex(Unreachable, "no answer within 0.2 seconds"):
                 fetch("GET", server.url("/"))
+
+    def test_a_malformed_answer_is_one_line(self) -> None:
+        def garbage(handler: object) -> None:
+            handler.wfile.write(b"\r\n")  # type: ignore[attr-defined]
+            handler.close_connection = True  # type: ignore[attr-defined]
+
+        with FakeServer({"/": garbage}) as server:
+            with self.assertRaises(Malformed) as caught:
+                fetch("HEAD", server.url("/"))
+        self.assertEqual(str(caught.exception), "malformed answer (BadStatusLine: '\\r\\n')")
 
     def test_the_timeout_is_fifteen_seconds(self) -> None:
         self.assertEqual(net.TIMEOUT, 15.0)
