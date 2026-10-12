@@ -111,7 +111,7 @@ surface-audit --version
 |---|---|
 | 0 | No failures. Warnings may be present. |
 | 1 | One or more failures. |
-| 2 | A configuration error (one line on stderr, no request sent), or a surface that did not answer within 15 seconds, after one retry when the connection was reset. |
+| 2 | A configuration error (one line on stderr, no request sent), or a surface that did not answer: refused, reset twice, or not finished within 15 seconds. The 15 seconds cover the whole request, connect to last byte, so a server that sends one byte at a time cannot hold a run; the row reads `unreachable (timed out after 15 s)`. |
 
 In CI, with the config committed beside the site:
 

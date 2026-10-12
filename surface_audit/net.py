@@ -8,6 +8,7 @@ from __future__ import annotations
 import http.client
 import socket
 import ssl
+import threading
 import urllib.error
 import urllib.request
 from email.message import Message
@@ -16,7 +17,7 @@ from urllib.parse import urljoin
 
 from . import __version__
 
-TIMEOUT = 15.0                    # seconds per request
+TIMEOUT = 15.0                    # seconds for a whole request: connect, headers and body
 MAX_HOPS = 5                      # redirects followed before giving up
 MAX_BODY = 10 * 1024 * 1024       # bytes read from a body; an OpenAPI description of a large schema fits
 READ_ONLY = ("GET", "HEAD")
@@ -48,13 +49,77 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-# build_opener adds no cookie handler, so no session is ever carried between requests.
-_OPENER = urllib.request.build_opener(_NoRedirect)
+class _Deadline:
+    """Shut the request's socket once the whole request has run TIMEOUT seconds.
+
+    The socket timeout restarts on every byte received, so on its own it lets a
+    server that sends one byte every few seconds hold a run for as long as it likes.
+    """
+
+    def __init__(self) -> None:
+        self.expired = False
+        self._sock: Optional[socket.socket] = None
+        self._lock = threading.Lock()
+        self._timer = threading.Timer(TIMEOUT, self._expire)
+        self._timer.daemon = True
+
+    def __enter__(self) -> "_Deadline":
+        self._timer.start()
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._timer.cancel()
+
+    def watch(self, sock: socket.socket) -> None:
+        with self._lock:
+            self._sock = sock
+            if self.expired:
+                self._shut()
+
+    def _expire(self) -> None:
+        with self._lock:
+            self.expired = True
+            if self._sock is not None:
+                self._shut()
+
+    def _shut(self) -> None:
+        try:
+            self._sock.shutdown(socket.SHUT_RDWR)  # type: ignore[union-attr]
+        except OSError:
+            pass
+
+
+def _opener(deadline: _Deadline) -> urllib.request.OpenerDirector:
+    """An opener whose connections hand their socket to the deadline. It has no cookie handler, so no
+    session is ever carried between requests."""
+
+    class Plain(http.client.HTTPConnection):
+        def connect(self) -> None:
+            super().connect()
+            deadline.watch(self.sock)
+
+    class Tls(http.client.HTTPSConnection):
+        def connect(self) -> None:
+            super().connect()
+            deadline.watch(self.sock)
+
+    class PlainHandler(urllib.request.HTTPHandler):
+        def http_open(self, req):  # type: ignore[no-untyped-def]
+            return self.do_open(Plain, req)
+
+    class TlsHandler(urllib.request.HTTPSHandler):
+        def https_open(self, req):  # type: ignore[no-untyped-def]
+            return self.do_open(Tls, req, context=self._context)  # type: ignore[attr-defined]
+
+    return urllib.request.build_opener(_NoRedirect, PlainHandler, TlsHandler)
+
+
+_NETWORK_ERRORS = (urllib.error.URLError, OSError, http.client.HTTPException)
 
 
 def _describe(cause: object) -> str:
     if isinstance(cause, (socket.timeout, TimeoutError)):
-        return "no answer within %g seconds" % TIMEOUT
+        return "timed out after %g s" % TIMEOUT
     if isinstance(cause, ConnectionRefusedError):
         return "connection refused"
     if isinstance(cause, socket.gaierror):
@@ -68,18 +133,24 @@ def _describe(cause: object) -> str:
 
 def _once(method: str, url: str, headers: Dict[str, str], read_body: bool) -> Answer:
     request = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT, **headers})
-    try:
-        response = _OPENER.open(request, timeout=TIMEOUT)
-    except urllib.error.HTTPError as error:   # a 3xx, 4xx or 5xx is an answer, not a failure
-        response = error
-    try:
-        body = response.read(MAX_BODY) if read_body and method == "GET" else b""
-    finally:
-        response.close()
+    with _Deadline() as deadline:
+        try:
+            try:
+                response = _opener(deadline).open(request, timeout=TIMEOUT)
+            except urllib.error.HTTPError as error:   # a 3xx, 4xx or 5xx is an answer, not a failure
+                response = error
+            try:
+                body = response.read(MAX_BODY) if read_body and method == "GET" else b""
+            finally:
+                response.close()
+        except _NETWORK_ERRORS:
+            if deadline.expired:   # whatever the shut socket raised, the cause is the deadline
+                raise socket.timeout() from None
+            raise
+        if deadline.expired:       # a body cut short by the deadline is not an answer
+            raise socket.timeout()
     return Answer(response.getcode(), response.headers, body, url, 0, method)
 
-
-_NETWORK_ERRORS = (urllib.error.URLError, OSError, http.client.HTTPException)
 
 
 def _cause(error: Exception) -> object:

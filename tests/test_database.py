@@ -105,7 +105,7 @@ class TestTableList(DatabaseCase):
     def test_an_unreachable_service_is_an_error(self) -> None:
         rows = database_rows(surface(postgrest_url="http://127.0.0.1:%d" % closed_port(), anon_key=ANON))
         self.assertEqual([(r.rule, r.result, r.answer) for r in rows],
-                         [("T1", "error", "unreachable: connection refused")])
+                         [("T1", "error", "unreachable (connection refused)")])
 
 
 if __name__ == "__main__":

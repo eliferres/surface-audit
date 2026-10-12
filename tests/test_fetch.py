@@ -1,6 +1,7 @@
 """The HTTP layer: read-only verbs, redirects by hand, one retry on a reset, and no answer as an error."""
 from __future__ import annotations
 
+import time
 import unittest
 from unittest import mock
 
@@ -85,7 +86,7 @@ class TestNoAnswer(unittest.TestCase):
 
     def test_a_slow_server_times_out(self) -> None:
         with FakeServer({"/": slow(1.0)}) as server, mock.patch.object(net, "TIMEOUT", 0.2):
-            with self.assertRaisesRegex(Unreachable, "no answer within 0.2 seconds"):
+            with self.assertRaisesRegex(Unreachable, "timed out after 0.2 s"):
                 fetch("GET", server.url("/"))
 
     def test_a_malformed_answer_is_one_line(self) -> None:
@@ -97,6 +98,23 @@ class TestNoAnswer(unittest.TestCase):
             with self.assertRaises(Malformed) as caught:
                 fetch("HEAD", server.url("/"))
         self.assertEqual(str(caught.exception), "malformed answer (BadStatusLine: '\\r\\n')")
+
+    def test_a_server_dripping_bytes_is_cut_off_at_the_deadline(self) -> None:
+        # One byte a second never trips the per-read socket timeout; only the whole-request deadline stops it.
+        def drip(handler: object) -> None:
+            handler.wfile.write(b"HTTP/1.1 200 OK\r\nX-Drip: ")  # type: ignore[attr-defined]
+            for _ in range(8):
+                handler.wfile.write(b"a")  # type: ignore[attr-defined]
+                handler.wfile.flush()  # type: ignore[attr-defined]
+                time.sleep(1.0)
+            handler.close_connection = True  # type: ignore[attr-defined]
+
+        with FakeServer({"/": drip}) as server, mock.patch.object(net, "TIMEOUT", 2.0):
+            started = time.monotonic()
+            with self.assertRaisesRegex(Unreachable, "^timed out after 2 s$"):
+                fetch("GET", server.url("/"))
+        self.assertLess(time.monotonic() - started, 3.5)
+        self.assertEqual(server.verbs(), ["GET"])   # a deadline is not a reset, so no retry
 
     def test_the_timeout_is_fifteen_seconds(self) -> None:
         self.assertEqual(net.TIMEOUT, 15.0)

@@ -151,7 +151,7 @@ class TestPageRows(unittest.TestCase):
         url = "http://127.0.0.1:%d/" % closed_port()
         rows = page_rows(surface(), url)
         self.assertEqual({r.result for r in rows}, {"error"})
-        self.assertEqual(rows[0].answer, "unreachable: connection refused")
+        self.assertEqual(rows[0].answer, "unreachable (connection refused)")
 
 
 class TestH7Redirect(unittest.TestCase):

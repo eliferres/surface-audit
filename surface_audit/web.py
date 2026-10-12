@@ -138,7 +138,7 @@ def page_rows(surface: Surface, url: str) -> List[Row]:
     try:
         answer = fetch("GET", url)
     except Unreachable as error:
-        rows += [Row(surface.name, rule, ERROR, "GET " + url, "unreachable: %s" % error, "no answer, so no verdict")
+        rows += [Row(surface.name, rule, ERROR, "GET " + url, "unreachable (%s)" % error, "no answer, so no verdict")
                  for rule, _ in rules]
     else:
         request = _request("GET", url, answer)
@@ -190,7 +190,7 @@ def redirect_row(surface: Surface, url: str) -> Row:
     try:
         answer = _https_hop(url)
     except Unreachable as error:
-        return Row(surface.name, "H7", ERROR, "HEAD " + url, "unreachable: %s" % error, "no answer, so no verdict")
+        return Row(surface.name, "H7", ERROR, "HEAD " + url, "unreachable (%s)" % error, "no answer, so no verdict")
     request = _request(answer.method, url, answer)
     location = answer.headers.get("Location")
     line = "%d %s" % (answer.status, _shown("Location", location))
@@ -208,7 +208,7 @@ def refusal_row(surface: Surface, url: str) -> Row:
     try:
         answer = fetch("GET", url, follow=False)
     except Unreachable as error:
-        return Row(surface.name, "R1", ERROR, request, "unreachable: %s" % error, "no answer, so no verdict")
+        return Row(surface.name, "R1", ERROR, request, "unreachable (%s)" % error, "no answer, so no verdict")
     line = str(answer.status)
     if answer.headers.get("Location"):
         line += " location: %s" % answer.headers["Location"]

@@ -86,10 +86,10 @@ class TestExitCodes(RunCase):
         url = "http://127.0.0.1:%d/" % closed_port()
         r = self.run_tool("run", self.config({"name": "down", "urls": [url], "http_url": url}))
         self.assertEqual(r.returncode, 2)
-        self.assertIn("error H1  down  unreachable: connection refused (GET %s)" % url, r.stdout)
+        self.assertIn("error H1  down  unreachable (connection refused) (GET %s)" % url, r.stdout)
         self.assertIn("ERROR: 0 failing, 0 warning, 0 passing, 7 errors", r.stdout)
         report = (self.dir / "reports" / self.reports()[0]).read_text(encoding="utf-8")
-        self.assertIn("| down | H1 | error | GET %s | unreachable: connection refused |" % url, report)
+        self.assertIn("| down | H1 | error | GET %s | unreachable (connection refused) |" % url, report)
 
     def test_unreachable_outranks_a_failure(self) -> None:
         with FakeServer({"/": (200, {}, b"")}) as server:

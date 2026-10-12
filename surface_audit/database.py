@@ -59,7 +59,7 @@ def table_row(surface: Surface, table: str) -> Row:
     try:
         answer = fetch("GET", url, key_headers(surface.anon_key or ""), follow=False, read_body=True)
     except Unreachable as error:
-        return Row(surface.name, "T2", ERROR, request, "unreachable: %s" % error, NO_ANSWER)
+        return Row(surface.name, "T2", ERROR, request, "unreachable (%s)" % error, NO_ANSWER)
     status = answer.status
     if status in (401, 403):
         return Row(surface.name, "T2", PASS, request, str(status), "%s: closed to anonymous reads" % table)
@@ -84,7 +84,7 @@ def database_rows(surface: Surface) -> List[Row]:
     try:
         answer = fetch("GET", url, key_headers(surface.anon_key or ""), read_body=True)
     except Unreachable as error:
-        return [Row(surface.name, "T1", ERROR, request, "unreachable: %s" % error, NO_ANSWER)]
+        return [Row(surface.name, "T1", ERROR, request, "unreachable (%s)" % error, NO_ANSWER)]
     listed = tables_from_openapi(answer)
     if listed is not None:
         first = Row(surface.name, "T1", PASS, request, "%d, OpenAPI description" % answer.status,
