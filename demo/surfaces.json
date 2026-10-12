@@ -1,0 +1,22 @@
+{
+  "surfaces": [
+    {
+      "name": "shop",
+      "urls": ["http://127.0.0.1:47613/shop/"],
+      "http_url": "http://127.0.0.1:47613/shop-http/",
+      "postgrest_url": "http://127.0.0.1:47613/shop-db",
+      "anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkZW1vIiwicm9sZSI6ImFub24ifQ.ZGVtby1zaWduYXR1cmU",
+      "must_refuse": ["http://127.0.0.1:47613/shop/api/orders"],
+      "built_dir": "site"
+    },
+    {
+      "name": "blog",
+      "urls": ["http://127.0.0.1:47613/blog/"],
+      "http_url": "http://127.0.0.1:47613/blog/",
+      "postgrest_url": "http://127.0.0.1:47613/blog-db",
+      "anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkZW1vIiwicm9sZSI6ImFub24ifQ.ZGVtby1zaWduYXR1cmU",
+      "public_tables": ["posts"],
+      "must_refuse": ["http://127.0.0.1:47613/blog/api/drafts"]
+    }
+  ]
+}

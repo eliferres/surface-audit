@@ -1,0 +1,22 @@
+[
+  {
+    "cmd": "python3 demo/fake_site.py python3 -m surface_audit run demo/surfaces.json; echo \"exit $?\"",
+    "out": "warn  H1  blog  max-age 15552000 is below 31536000 (one year) (GET http://127.0.0.1:47613/blog/)\nfail  H2  blog  no Content-Security-Policy header (GET http://127.0.0.1:47613/blog/)\nfail  H3  blog  any site can frame the page (clickjacking) (GET http://127.0.0.1:47613/blog/)\nwarn  H5  blog  the browser default decides how much of the URL other sites see (GET http://127.0.0.1:47613/blog/)\nfail  H7  blog  plain http is served without a redirect to https (HEAD http://127.0.0.1:47613/blog/)\nfail  T2  blog  subscribers: open to anonymous reads (GET http://127.0.0.1:47613/blog-db/rest/v1/subscribers?select=*&limit=1 (public key, no session))\nFAIL: 4 failing, 2 warning, 17 passing, 0 errors; report reports/2026-10-12-0954-ba43b9.md\nexit 1",
+    "status": 0
+  },
+  {
+    "cmd": "grep -h subscribers reports/*.md | tr '|' '\\n' | sed -n '2,7p'",
+    "out": " blog \n T2 \n fail \n GET http://127.0.0.1:47613/blog-db/rest/v1/subscribers?select=*&limit=1 (public key, no session) \n 200, 1 row \n subscribers: open to anonymous reads ",
+    "status": 0
+  },
+  {
+    "cmd": "echo '{\"surfaces\": []}' > empty.json; python3 -m surface_audit run empty.json; echo \"exit $?\"",
+    "out": "surface-audit: empty.json lists no surfaces\nexit 2",
+    "status": 0
+  },
+  {
+    "cmd": "python3 -m surface_audit --version",
+    "out": "surface-audit 0.1.0",
+    "status": 0
+  }
+]
