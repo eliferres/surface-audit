@@ -86,8 +86,8 @@ def h3_framing(headers: Message) -> Verdict:
             opened = [s for s in sources if _ANY_SITE.fullmatch(s)]
             if opened:
                 return FAIL, line, "frame-ancestors %s lets any site frame the page" % " ".join(opened)
-            if not sources:
-                return FAIL, line, "frame-ancestors names no source; give 'none', 'self' or named origins"
+            if not sources or sources == ["'none'"]:   # the CSP spec reads an empty list as "no source"
+                return PASS, line, "'none' or an empty list blocks all framing"
             return PASS, line, "frame-ancestors limits who may frame the page"
     value = _value(headers, "X-Frame-Options")
     shown = _shown("X-Frame-Options", value)

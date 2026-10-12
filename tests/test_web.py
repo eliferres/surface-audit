@@ -93,7 +93,7 @@ class TestH3Framing(unittest.TestCase):
                 self.assertEqual(h3_framing(headers(**values))[0], result)
 
     def test_a_frame_ancestors_that_lets_any_site_frame_fails(self) -> None:
-        for sources in ("*", "https:", "http: 'self'", "https://*", "'self' *", ""):
+        for sources in ("*", "https:", "http: 'self'", "https://*", "'self' *"):
             with self.subTest(sources=sources):
                 result, _, why = h3_framing(headers(Content_Security_Policy="default-src 'self'; frame-ancestors "
                                                                             + sources, X_Frame_Options="DENY"))
@@ -101,10 +101,17 @@ class TestH3Framing(unittest.TestCase):
                 self.assertIn("frame-ancestors", why)
 
     def test_a_frame_ancestors_naming_who_may_frame_passes(self) -> None:
-        for sources in ("'none'", "'self'", "'self' https://app.example.com", "https://*.example.com"):
+        for sources in ("'self'", "'self' https://app.example.com", "https://*.example.com"):
             with self.subTest(sources=sources):
                 result, _, why = h3_framing(headers(Content_Security_Policy="frame-ancestors " + sources))
                 self.assertEqual((result, why), ("pass", "frame-ancestors limits who may frame the page"))
+
+    def test_none_or_an_empty_list_blocks_all_framing(self) -> None:
+        for policy in ("frame-ancestors 'none'", "frame-ancestors", "default-src 'self'; frame-ancestors ;"):
+            with self.subTest(policy=policy):
+                self.assertEqual(h3_framing(headers(Content_Security_Policy=policy))[::2],
+                                 ("pass", "'none' or an empty list blocks all framing"))
+        self.assertEqual(h3_framing(headers(Content_Security_Policy="frame-ancestors *"))[0], "fail")
 
     def test_the_answer_names_what_decided_it(self) -> None:
         self.assertEqual(h3_framing(headers(Content_Security_Policy="frame-ancestors 'none'"))[1],
