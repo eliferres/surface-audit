@@ -185,6 +185,7 @@ class TestH7Redirect(unittest.TestCase):
         row, server = self.row({"/": head_garbage})
         self.assertEqual(row.result, "pass")
         self.assertEqual(server.verbs(), ["HEAD", "GET"])
+        self.assertEqual(row.request, "GET " + server.url("/"))   # the request that decided the row
 
     def test_skip(self) -> None:
         self.assertEqual(redirect_row(surface(skip=["H7"]), "http://a.example.com/").result, "skip")

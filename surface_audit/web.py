@@ -181,7 +181,7 @@ def redirect_row(surface: Surface, url: str) -> Row:
         answer = _https_hop(url)
     except Unreachable as error:
         return Row(surface.name, "H7", ERROR, "HEAD " + url, "unreachable: %s" % error, "no answer, so no verdict")
-    request = _request("HEAD", url, answer)
+    request = _request(answer.method, url, answer)
     location = answer.headers.get("Location")
     line = "%d %s" % (answer.status, _shown("Location", location))
     if location and urlsplit(urljoin(answer.url, location)).scheme == "https":

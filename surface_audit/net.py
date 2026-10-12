@@ -38,6 +38,7 @@ class Answer(NamedTuple):
     body: bytes
     url: str     # the URL that gave this answer, after any redirects
     hops: int    # redirects followed to reach it
+    method: str  # the verb that got this answer
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -75,7 +76,7 @@ def _once(method: str, url: str, headers: Dict[str, str], read_body: bool) -> An
         body = response.read(MAX_BODY) if read_body and method == "GET" else b""
     finally:
         response.close()
-    return Answer(response.getcode(), response.headers, body, url, 0)
+    return Answer(response.getcode(), response.headers, body, url, 0, method)
 
 
 _NETWORK_ERRORS = (urllib.error.URLError, OSError, http.client.HTTPException)
