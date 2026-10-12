@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surface-audit"
+dynamic = ["version"]
+description = "Read-only security checks of the public surfaces you run: headers, open tables, data routes, shipped secrets"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "Eli Ferres" }]
+
+[project.urls]
+Source = "https://github.com/eliferres/surface-audit"
+Changelog = "https://github.com/eliferres/surface-audit/blob/main/CHANGELOG.md"
+
+[project.scripts]
+surface-audit = "surface_audit:main"
+
+[tool.setuptools]
+packages = ["surface_audit"]
+
+[tool.setuptools.dynamic]
+version = { attr = "surface_audit.__version__" }
