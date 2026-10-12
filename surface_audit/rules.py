@@ -8,7 +8,7 @@ RULES = {
     "H1": ("Strict-Transport-Security", "max-age of at least 15552000 (180 days); below 31536000 is a warning"),
     "H2": ("Content-Security-Policy", "present; 'unsafe-inline' or 'unsafe-eval' for scripts, or default-src *, "
                                       "is a warning"),
-    "H3": ("Framing", "frame-ancestors in the policy, or X-Frame-Options DENY or SAMEORIGIN"),
+    "H3": ("Framing", "frame-ancestors naming 'none', 'self' or origins, or X-Frame-Options DENY or SAMEORIGIN"),
     "H4": ("X-Content-Type-Options", "nosniff"),
     "H5": ("Referrer-Policy", "present; a warning when missing"),
     "H6": ("Permissions-Policy", "present; a warning when missing"),

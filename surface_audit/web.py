@@ -15,6 +15,9 @@ HSTS_GOOD = 31536000     # one year: the HSTS preload list's minimum
 
 Verdict = Tuple[str, str, str]   # (result, the header line or its absence, why)
 
+# A frame-ancestors source that matches any site: *, a bare scheme such as https:, or a wildcard host.
+_ANY_SITE = re.compile(r"\*|[a-z][a-z0-9+.-]*:|([a-z][a-z0-9+.-]*://)?\*(:[0-9*]+)?(/.*)?")
+
 
 def _value(headers: Message, name: str) -> Optional[str]:
     values = headers.get_all(name)
@@ -77,8 +80,15 @@ def h2_csp(headers: Message) -> Verdict:
 def h3_framing(headers: Message) -> Verdict:
     for policy in csp_policies(headers):
         if "frame-ancestors" in policy:
-            line = "content-security-policy: frame-ancestors %s" % " ".join(policy["frame-ancestors"])
-            return PASS, line, "frame-ancestors decides who may frame the page"
+            sources = policy["frame-ancestors"]
+            line = ("content-security-policy: frame-ancestors %s" % " ".join(sources)).rstrip()
+            # Browsers obey frame-ancestors over X-Frame-Options, so an open one decides the rule alone.
+            opened = [s for s in sources if _ANY_SITE.fullmatch(s)]
+            if opened:
+                return FAIL, line, "frame-ancestors %s lets any site frame the page" % " ".join(opened)
+            if not sources:
+                return FAIL, line, "frame-ancestors names no source; give 'none', 'self' or named origins"
+            return PASS, line, "frame-ancestors limits who may frame the page"
     value = _value(headers, "X-Frame-Options")
     shown = _shown("X-Frame-Options", value)
     if value is not None and value.strip().upper() in ("DENY", "SAMEORIGIN"):
