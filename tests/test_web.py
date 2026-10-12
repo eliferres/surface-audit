@@ -223,6 +223,10 @@ class TestR1Refusal(unittest.TestCase):
     def test_200_fails(self) -> None:
         self.assertEqual(self.grade((200, {}, b"[]")), ("fail", "200"))
 
+    def test_every_2xx_fails(self) -> None:
+        self.assertEqual(self.grade((206, {"Content-Range": "0-0/1"}, b'[{"id": 1}]')), ("fail", "206"))
+        self.assertEqual(self.grade((204, {}, b"")), ("fail", "204"))
+
     def test_anything_else_is_reported_as_it_is_and_never_followed(self) -> None:
         self.assertEqual(self.grade((302, {"Location": "/login"}, b"")), ("warn", "302 location: /login"))
         self.assertEqual(self.grade((404, {}, b"")), ("warn", "404"))

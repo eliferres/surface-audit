@@ -214,6 +214,7 @@ def refusal_row(surface: Surface, url: str) -> Row:
         line += " location: %s" % answer.headers["Location"]
     if answer.status in (401, 403):
         return Row(surface.name, "R1", PASS, request, line, "refuses a request with no session")
-    if answer.status == 200:
-        return Row(surface.name, "R1", FAIL, request, line, "answers 200 to a request with no session")
+    if 200 <= answer.status < 300:   # 204 and 206 are answers too; only a refusal keeps the data in
+        return Row(surface.name, "R1", FAIL, request, line,
+                   "answers %d to a request with no session" % answer.status)
     return Row(surface.name, "R1", WARN, request, line, "answers %d, not 401 or 403" % answer.status)

@@ -53,7 +53,7 @@ Each rule gives one row per page, table, route or file it checks, graded pass, w
 | `H7` | A plain `http://` request to each host is redirected to `https://` | A site still served over http can be read and changed in transit. |
 | `T1` | The database lists its tables in its OpenAPI description; when that is closed, the config's `tables` list is used and the row is a warning; with neither, the row fails | A table nobody listed is a table nobody checked. |
 | `T2` | Each table, asked for one row with the public key and no session, returns none; rows fail unless the table is in `public_tables` | The public key ships in the site's JavaScript, so this is what any stranger can read. |
-| `R1` | Each URL in `must_refuse` answers 401 or 403 to a request with no session; 200 fails, anything else is a warning that shows the status | A data route that answers without a session serves its data to everyone. |
+| `R1` | Each URL in `must_refuse` answers 401 or 403 to a request with no session; any 2xx fails, anything else is a warning that shows the status | A data route that answers without a session serves its data to everyone. |
 | `S1` | No service-role JWT, Anthropic API key (`sk-ant` prefix), Stripe live secret key (`sk_live_`), AWS access key id (`AKIA`), GitHub token (`ghp_`, `gho_`) PEM private key or Supabase secret key (`sb_secret_`) in any file under `built_dir` | Everything in a built site folder is downloadable. A service-role key in the browser bypasses every table's row security. |
 | `G1` | Git tracks no `.env` or `.env.*` file (`.env.example` and `.env.sample` aside) and no `.pem`, `.key`, `.p12` or `.pfx` file | A committed secret stays in the history after the file is deleted. |
 
