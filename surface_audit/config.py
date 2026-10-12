@@ -88,11 +88,18 @@ def _surface(raw: Any, index: int, base: str) -> Surface:
     if ("tables" in raw or "public_tables" in raw) and "postgrest_url" not in raw:
         raise ConfigError("%s: tables and public_tables need a postgrest_url" % where)
     if "anon_key" in raw:
-        # A key that bypasses row security would turn the audit into a reader of private data.
+        # A key that bypasses row security would turn the audit into a reader of private data. Supabase has
+        # two formats: the older JWT keys carry a role claim, the newer ones a sb_secret_ or sb_publishable_ prefix.
         claims = jwt_claims(raw["anon_key"])
         if claims and claims.get("role") == "service_role":
-            raise ConfigError("%s: anon_key carries the service_role claim; give the public anon key, "
-                              "never a key that bypasses row security" % where)
+            secret = "carries the service_role claim"
+        elif raw["anon_key"].startswith("sb_secret_"):
+            secret = "is a Supabase secret key (sb_secret_)"
+        else:
+            secret = ""
+        if secret:
+            raise ConfigError("%s: anon_key %s; give the public anon or publishable key, "
+                              "never a key that bypasses row security" % (where, secret))
     paths = {}
     for field in ("built_dir", "repo_dir"):
         if field in raw:

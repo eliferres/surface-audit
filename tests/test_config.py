@@ -109,8 +109,20 @@ class TestRefused(ConfigCase):
     def test_a_service_role_key_is_refused(self) -> None:
         msg = self.error({"surfaces": [{"name": "a", "postgrest_url": "https://db.example.com",
                                         "anon_key": make_jwt("service_role")}]})
-        self.assertEqual(msg, "surface 'a': anon_key carries the service_role claim; give the public anon key, "
-                              "never a key that bypasses row security")
+        self.assertEqual(msg, "surface 'a': anon_key carries the service_role claim; give the public anon or "
+                              "publishable key, never a key that bypasses row security")
+
+    def test_a_supabase_secret_key_is_refused(self) -> None:
+        msg = self.error({"surfaces": [{"name": "a", "postgrest_url": "https://db.example.com",
+                                        "anon_key": "sb_secret_" + "N7xQ" * 8}]})
+        self.assertEqual(msg, "surface 'a': anon_key is a Supabase secret key (sb_secret_); give the public anon "
+                              "or publishable key, never a key that bypasses row security")
+
+    def test_a_supabase_publishable_key_is_accepted(self) -> None:
+        key = "sb_publishable_" + "N7xQ" * 8
+        [s] = load(self.write({"surfaces": [{"name": "a", "postgrest_url": "https://db.example.com",
+                                             "anon_key": key}]}))
+        self.assertEqual(s.anon_key, key)
 
     def test_a_key_that_is_not_a_jwt_is_accepted(self) -> None:
         [s] = load(self.write({"surfaces": [{"name": "a", "postgrest_url": "https://db.example.com",

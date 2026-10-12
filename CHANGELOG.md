@@ -11,7 +11,7 @@ All notable changes to this project are documented in this file. The format is b
 - H7: a plain http request to each host must be redirected to https.
 - T1 and T2: the tables of a PostgREST or Supabase database, listed from its OpenAPI description or the config, each asked for one row with the public key and no session; a table that answers rows fails unless the config lists it in `public_tables`.
 - R1: each URL under `must_refuse` must answer 401 or 403 to a request with no session.
-- S1: every file in the built site folder is scanned for a service-role token, provider keys and private keys; the report names the file and the shape, never the value.
+- S1: every file in the built site folder is scanned for a service-role token, a Supabase secret key, provider keys and private keys; the report names the file and the shape, never the value.
 - G1: git must track no `.env` file (templates aside) and no `.pem`, `.key`, `.p12` or `.pfx` file.
-- A config whose key carries the `service_role` claim is refused before any request is sent.
+- A config whose key bypasses row security, a JWT with the `service_role` claim or a Supabase `sb_secret_` key, is refused before any request is sent; `sb_publishable_` keys are accepted as public.
 - `--json` output for CI, `--out` to choose the report folder, and exit codes 0 for clean, 1 for findings, 2 for a configuration error or a surface that did not answer.

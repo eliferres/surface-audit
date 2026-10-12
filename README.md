@@ -54,7 +54,7 @@ Each rule gives one row per page, table, route or file it checks, graded pass, w
 | `T1` | The database lists its tables in its OpenAPI description; when that is closed, the config's `tables` list is used and the row is a warning; with neither, the row fails | A table nobody listed is a table nobody checked. |
 | `T2` | Each table, asked for one row with the public key and no session, returns none; rows fail unless the table is in `public_tables` | The public key ships in the site's JavaScript, so this is what any stranger can read. |
 | `R1` | Each URL in `must_refuse` answers 401 or 403 to a request with no session; 200 fails, anything else is a warning that shows the status | A data route that answers without a session serves its data to everyone. |
-| `S1` | No service-role JWT, Anthropic API key (`sk-ant` prefix), Stripe live secret key (`sk_live_`), AWS access key id (`AKIA`), GitHub token (`ghp_`, `gho_`) or PEM private key in any file under `built_dir` | Everything in a built site folder is downloadable. A service-role key in the browser bypasses every table's row security. |
+| `S1` | No service-role JWT, Anthropic API key (`sk-ant` prefix), Stripe live secret key (`sk_live_`), AWS access key id (`AKIA`), GitHub token (`ghp_`, `gho_`) PEM private key or Supabase secret key (`sb_secret_`) in any file under `built_dir` | Everything in a built site folder is downloadable. A service-role key in the browser bypasses every table's row security. |
 | `G1` | Git tracks no `.env` or `.env.*` file (`.env.example` and `.env.sample` aside) and no `.pem`, `.key`, `.p12` or `.pfx` file | A committed secret stays in the history after the file is deleted. |
 
 An `error` row means no verdict: the surface did not answer, a file could not be read, or git did not run. Any error row makes the exit code 2, so a site that is down never reads as a pass.
@@ -87,7 +87,7 @@ The config is one JSON object with a `surfaces` list. Relative folders are read 
 | `skip` | Header rules (`H1` to `H7`) not to grade on this surface, such as `H2` for an API host that serves no HTML. Skipped rules still get a row that says so. |
 | `http_url` | The plain-http address H7 asks. Defaults to `http://<host>/` for each host in `urls`. |
 | `postgrest_url` | The project URL of a PostgREST or Supabase database; the tool asks `<postgrest_url>/rest/v1/`. Needs `anon_key`. |
-| `anon_key` | The public key the site's browser code uses. A key whose JWT carries the `service_role` claim is refused before any request. |
+| `anon_key` | The public key the site's browser code uses: Supabase's anon JWT or its newer `sb_publishable_` key. A key that bypasses row security, a JWT carrying the `service_role` claim or an `sb_secret_` key, is refused before any request. |
 | `tables` | Tables to check in addition to those the OpenAPI description lists, and the whole list when the description is closed. |
 | `public_tables` | Tables meant to be readable by anyone, such as a product catalog. Rows from these pass. |
 | `must_refuse` | Data routes that must answer 401 or 403 to a request with no session. Redirects are not followed. |

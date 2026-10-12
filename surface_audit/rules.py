@@ -16,8 +16,8 @@ RULES = {
     "T1": ("Table list", "the REST service describes its tables, or the config lists them"),
     "T2": ("Anonymous reads", "each table answers no rows to the public key with no session"),
     "R1": ("Refusal", "each must_refuse URL answers 401 or 403 with no session"),
-    "S1": ("Secrets in built files", "no service-role token, provider key or private key in a file a browser "
-                                     "can download"),
+    "S1": ("Secrets in built files", "no service-role token, Supabase secret key, provider key or private key in a "
+                                     "file a browser can download"),
     "G1": ("Tracked env and key files", "git tracks no .env file and no .pem, .key, .p12 or .pfx file"),
 }
 

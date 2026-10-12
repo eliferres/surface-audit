@@ -124,6 +124,15 @@ class TestConfigErrors(RunCase):
         self.assertIn("anon_key carries the service_role claim", r.stderr)
         self.assertEqual(server.requests, [])
 
+    def test_a_supabase_secret_key_is_refused_before_any_request(self) -> None:
+        with FakeServer({}) as server:
+            r = self.run_tool("run", self.config({"name": "a", "urls": [server.url("/")],
+                                                  "postgrest_url": server.url(""),
+                                                  "anon_key": "sb_" + "secret_" + "N7xQ" * 8}))
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("anon_key is a Supabase secret key (sb_secret_)", r.stderr)
+        self.assertEqual(server.requests, [])
+
     def test_bad_usage_is_one_line_and_exit_2(self) -> None:
         for args in ((), ("run",), ("scan", "x.json"), ("run", "x.json", "--bogus")):
             with self.subTest(args=args):

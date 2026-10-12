@@ -20,7 +20,9 @@ PLANTED = {
     "AWS access key id": "AK" + "IA" + "IOSFODNN7EXAMPLE",
     "GitHub token": "gh" + "p_" + "a" * 36,
     "private key": "-----BEGIN " + "RSA PRIVATE KEY-----",
+    "Supabase secret key": "sb_" + "secret_" + "N7xQ" * 8,
 }
+PUBLISHABLE = "sb_" + "publishable_" + "N7xQ" * 8
 
 
 class FolderCase(unittest.TestCase):
@@ -58,6 +60,12 @@ class TestShapes(FolderCase):
         rows = secret_rows(surface(built_dir=self.root, anon_key=ANON))
         self.assertEqual([(r.result, r.answer) for r in rows], [("pass", "no secret shape")])
         self.assertEqual(rows[0].request, "read 1 files under %s" % self.root)
+
+    def test_a_supabase_publishable_key_is_not_a_secret(self) -> None:
+        self.put("app.js", 'const key = "%s";' % PUBLISHABLE)
+        for key in (None, PUBLISHABLE):
+            with self.subTest(configured=key):
+                self.assertEqual(secret_rows(surface(built_dir=self.root, anon_key=key))[0].result, "pass")
 
     def test_the_configured_key_is_allow_listed_by_its_hash(self) -> None:
         stripe = PLANTED["Stripe live secret key"]

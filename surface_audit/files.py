@@ -22,6 +22,7 @@ SHAPES: List[Tuple[str, Pattern[bytes]]] = [
     ("AWS access key id", re.compile(rb"(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}(?![A-Za-z0-9])")),
     ("GitHub token", re.compile(rb"(?<![A-Za-z0-9])gh[po]_[A-Za-z0-9]{36}(?![A-Za-z0-9])")),
     ("private key", re.compile(rb"-----BEGIN ([A-Z0-9]+ )*PRIVATE KEY-----")),
+    ("Supabase secret key", re.compile(rb"(?<![A-Za-z0-9])sb_secret_[A-Za-z0-9_-]{16,200}")),
 ]
 
 ENV_ALLOWED = (".env.example", ".env.sample")
@@ -85,7 +86,7 @@ def secret_rows(surface: Surface) -> List[Row]:
                      "%s in %s, a file the browser can download" % (shape, shown)) for at, shape in hits]
     if not rows:
         rows.append(Row(surface.name, "S1", PASS, "read %d files under %s" % (len(files), root),
-                        "no secret shape", "no service-role token, provider key or private key"))
+                        "no secret shape", "no service-role token, Supabase secret key, provider key or private key"))
     return rows
 
 
