@@ -1,6 +1,6 @@
 # surface-audit
 
-surface-audit checks the websites and databases you run for the holes a defender looks at first: missing or weak security headers, database tables that answer rows to the public key, data routes that answer without a session, secrets in the files a browser downloads, and env or key files committed to git. It only reads, and it writes a dated report in which every row names the exact request sent and the answer that decided it, so a second person can re-run any row by hand.
+surface-audit checks the websites and databases you run for the holes a defender looks at first. It only reads, and it writes a dated report naming the exact request and answer behind every row.
 
 **Run it only against surfaces you own or have written permission to test.**
 
@@ -38,6 +38,10 @@ FAIL: 4 failing, 2 warning, 17 passing, 0 errors; report reports/2026-10-12-0954
 
 The console shows every row that is not a pass; the report in `reports/` holds all 23 rows, passes included. Python 3.9 or newer, standard library only.
 
+## What it checks
+
+surface-audit checks the websites and databases you run for the holes a defender looks at first: missing or weak security headers, database tables that answer rows to the public key, data routes that answer without a session, secrets in the files a browser downloads, and env or key files committed to git. It only reads, and it writes a dated report in which every row names the exact request sent and the answer that decided it, so a second person can re-run any row by hand.
+
 ## Rules
 
 Each rule gives one row per page, table, route or file it checks, graded pass, warn or fail. Only a fail changes the exit code.
@@ -54,7 +58,7 @@ Each rule gives one row per page, table, route or file it checks, graded pass, w
 | `T1` | The database lists its tables in its OpenAPI description; when that is closed, the config's `tables` list is used and the row is a warning; with neither, the row fails | A table nobody listed is a table nobody checked. |
 | `T2` | Each table, asked for one row with the public key and no session, returns none; rows fail unless the table is in `public_tables` | The public key ships in the site's JavaScript, so this is what any stranger can read. |
 | `R1` | Each URL in `must_refuse` answers 401 or 403 to a request with no session; any 2xx fails, anything else is a warning that shows the status | A data route that answers without a session serves its data to everyone. |
-| `S1` | No service-role JWT, Anthropic API key (`sk-ant` prefix), Stripe live secret key (`sk_live_`), AWS access key id (`AKIA`), GitHub token (`ghp_`, `gho_`) PEM private key or Supabase secret key (`sb_secret_`) in any file under `built_dir` | Everything in a built site folder is downloadable. A service-role key in the browser bypasses every table's row security. |
+| `S1` | No service-role JWT, Anthropic API key (`sk-ant` prefix), Stripe live secret key (`sk_live_`), AWS access key id (`AKIA`), GitHub token (`ghp_`, `gho_`), PEM private key or Supabase secret key (`sb_secret_`) in any file under `built_dir` | Everything in a built site folder is downloadable. A service-role key in the browser bypasses every table's row security. |
 | `G1` | Git tracks no `.env` or `.env.*` file (`.env.example` and `.env.sample` aside) and no `.pem`, `.key`, `.p12` or `.pfx` file | A committed secret stays in the history after the file is deleted. |
 
 An `error` row means no verdict: the surface did not answer, a file could not be read, or git did not run. Any error row makes the exit code 2, so a site that is down never reads as a pass.
