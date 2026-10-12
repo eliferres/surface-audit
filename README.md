@@ -113,6 +113,8 @@ surface-audit --version
 | 1 | One or more failures. |
 | 2 | A configuration error (one line on stderr, no request sent), or a surface that did not answer: refused, reset twice, or not finished within 15 seconds. The 15 seconds cover the whole request, connect to last byte, so a server that sends one byte at a time cannot hold a run; the row reads `unreachable (timed out after 15 s)`. |
 
+Warnings never change the exit code: a warning is a finding you read, not one that fails the build.
+
 In CI, with the config committed beside the site:
 
 ```yaml
