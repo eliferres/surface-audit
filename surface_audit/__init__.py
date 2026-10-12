@@ -13,6 +13,8 @@ from __future__ import annotations
 __version__ = "0.1.0"
 
 from .rules import HEADER_RULES, RULES, Row  # noqa: E402
+from .config import ConfigError, Surface, jwt_claims, load  # noqa: E402
 from .net import Answer, Unreachable, fetch  # noqa: E402
 
-__all__ = ["Answer", "HEADER_RULES", "RULES", "Row", "Unreachable", "fetch"]
+__all__ = ["Answer", "ConfigError", "HEADER_RULES", "RULES", "Row", "Surface", "Unreachable", "fetch", "jwt_claims",
+           "load"]
