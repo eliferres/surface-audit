@@ -1,6 +1,7 @@
 """The HTTP layer: read-only verbs, redirects by hand, one retry on a reset, and no answer as an error."""
 from __future__ import annotations
 
+import tempfile
 import time
 import unittest
 from unittest import mock
@@ -45,6 +46,22 @@ class TestRedirects(unittest.TestCase):
             server.routes["/5"] = (302, {"Location": "/6"}, b"")
             with self.assertRaisesRegex(Unreachable, "more than 5 redirects"):
                 fetch("GET", server.url("/0"))
+
+    def test_a_redirect_off_the_web_is_refused_and_never_requested(self) -> None:
+        with tempfile.NamedTemporaryFile("w", suffix=".txt") as local:
+            local.write("on the auditor's disk")
+            local.flush()
+            for target in ("file://" + local.name, "FILE://" + local.name, "ftp://127.0.0.1/x"):
+                with self.subTest(target=target), FakeServer({"/": (302, {"Location": target}, b"")}) as server:
+                    with self.assertRaises(Unreachable) as caught:
+                        fetch("GET", server.url("/"), read_body=True)
+                    self.assertIn("redirected off the web", str(caught.exception))
+                    self.assertEqual(server.verbs(), ["GET"])
+
+    def test_only_http_and_https_addresses_are_requested(self) -> None:
+        for url in ("file:///etc/hosts", "ftp://127.0.0.1/x", "data:text/plain,x", "127.0.0.1:1/"):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                fetch("GET", url)
 
     def test_follow_false_returns_the_redirect_itself(self) -> None:
         with FakeServer({"/": (302, {"Location": "/login"}, b"")}) as server:
