@@ -11,6 +11,8 @@ surface-audit checks the websites and databases you run for the holes a defender
 
 <img src="demo/terminal.svg" width="660" alt="Terminal session: surface-audit checks two demo surfaces on a local fake server, passes the clean one, and reports for the other a short HSTS max-age and a missing referrer policy as warnings, a missing Content-Security-Policy, no framing protection, no https redirect and a subscribers table open to anonymous reads as failures, then exits 1. The report row for the open table shows the request and the answer of 200 with one row. An empty config exits 2, and --version prints 0.1.0.">
 
+The [fde-agent-skills](https://github.com/eliferres/fde-agent-skills) library documents the working methods behind this tool and its sibling tools as agent skills.
+
 ## Install and first run
 
 ```bash
