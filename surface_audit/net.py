@@ -13,7 +13,7 @@ import urllib.error
 import urllib.request
 from email.message import Message
 from typing import Dict, NamedTuple, Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 from . import __version__
 
@@ -21,6 +21,7 @@ TIMEOUT = 15.0                    # seconds for a whole request: connect, header
 MAX_HOPS = 5                      # redirects followed before giving up
 MAX_BODY = 10 * 1024 * 1024       # bytes read from a body; an OpenAPI description of a large schema fits
 READ_ONLY = ("GET", "HEAD")
+WEB_SCHEMES = ("http", "https")    # the opener also knows file: and ftp:, so fetch() checks every address
 REDIRECTS = (301, 302, 303, 307, 308)
 USER_AGENT = "surface-audit/%s (+https://github.com/eliferres/surface-audit)" % __version__
 
@@ -180,10 +181,13 @@ def fetch(method: str, url: str, headers: Optional[Dict[str, str]] = None, *,
     """Send one GET or HEAD and return the answer, following up to MAX_HOPS redirects.
 
     With follow=False a 3xx is returned as the answer. Raises Unreachable when
-    no answer arrives or the redirects do not end within MAX_HOPS.
+    no answer arrives, the redirects do not end within MAX_HOPS, or a redirect
+    names an address that is not http or https.
     """
     if method not in READ_ONLY:
         raise ValueError("surface-audit only sends GET and HEAD, not %s" % method)
+    if urlsplit(url).scheme not in WEB_SCHEMES:
+        raise ValueError("surface-audit only requests http and https addresses, not %s" % url)
     hops = 0
     while True:
         answer = _with_retry(method, url, headers or {}, read_body)
@@ -192,5 +196,9 @@ def fetch(method: str, url: str, headers: Optional[Dict[str, str]] = None, *,
             return answer._replace(hops=hops)
         if hops == MAX_HOPS:
             raise Unreachable("more than %d redirects, last at %s" % (MAX_HOPS, url))
-        url = urljoin(url, location)
+        target = urljoin(url, location)
+        if urlsplit(target).scheme not in WEB_SCHEMES:
+            # A server under audit chooses this address. A file: or ftp: one is refused, never requested.
+            raise Unreachable("redirected off the web, to %s" % target)
+        url = target
         hops += 1
